@@ -1,0 +1,37 @@
+package main
+
+import "net/http"
+import "fmt"
+import "runtime"
+import "sync"
+import "time"
+
+
+var max=10
+//var maxint=11
+func main() {
+	runtime.GOMAXPROCS(6)
+	var goGroup sync.WaitGroup
+	goGroup.Add(max)
+	//n := make(chan interface{},maxint)
+	//var i int
+	//timeOut := make(chan bool,1)
+	//time.Sleep(time.Second * 2)
+	//timeOut <-true
+	for i:=0;i<max;i++ {
+		go func (a int) {
+			select{
+			case <-time.After(time.Second*1):
+				fmt.Println("time out:","1s")
+			default:
+				ex,_:=http.Get("http://192.168.2.18")
+	//		 z.Body.Close()()
+			// n <- a
+		 		fmt.Println(ex.Status,a)
+			}
+			goGroup.Done()
+		}(i)
+	}
+	goGroup.Wait()
+	fmt.Println("here done")
+}
