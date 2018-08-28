@@ -3,7 +3,7 @@
 //2 merge: 合并子列，若一个子列为空则
 //直接复制另外一个子列
 //3 需要与待排序数组等大小数组
-package mySort
+package mySort1
 
 import (
 	//"fmt"

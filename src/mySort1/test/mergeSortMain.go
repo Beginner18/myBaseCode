@@ -3,7 +3,7 @@ package main
 
 import (
 	"fmt"
-	"mySort"
+	"mySort1"
 )
 
 func main() {
@@ -16,6 +16,6 @@ func main() {
 		arr[i] = arr1[i]
 	}
 	fmt.Println("before: ", arr)
-	mySort.MergeSort(arr, 0, len(arr)-1)
+	mySort1.MergeSort(arr, 0, len(arr)-1)
 	fmt.Println("after: ", arr)
 }
