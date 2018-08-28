@@ -1,4 +1,4 @@
-//merge sort
+//merge sort: int float32 float64
 //1 divide: 中分，仅存在一个变量时不分
 //2 merge: 合并子列，若一个子列为空则
 //直接复制另外一个子列
@@ -49,41 +49,16 @@ func merge(arr, desArr []interface{}, lowleft, highleft, lowright, highright int
 			break
 		}
 		//判定待排序数组类型
-		switch arr[lowleft].(type) {
 		//待排序数组转为相应类型并比较
 		//空接口无比较
-		case int:
-			if arr[i1].(int) < arr[i2].(int) {
-				desArr[num] = arr[i1]
-				i1++
-				num++
-			} else {
-				desArr[num] = arr[i2]
-				i2++
-				num++
-			}
-		case float32:
-			if arr[i1].(float32) < arr[i2].(float32) {
-				desArr[num] = arr[i1]
-				i1++
-				num++
-			} else {
-				desArr[num] = arr[i2]
-				i2++
-				num++
-			}
-		case float64:
-			if arr[i1].(float64) < arr[i2].(float64) {
-				desArr[num] = arr[i1]
-				i1++
-				num++
-			} else {
-				desArr[num] = arr[i2]
-				i2++
-				num++
-			}
-		default:
-			log.Panicln("ilegal type")
+		if compare(arr[i1], arr[i2]) {
+			desArr[num] = arr[i1]
+			i1++
+			num++
+		} else {
+			desArr[num] = arr[i2]
+			i2++
+			num++
 		}
 	}
 	//copy
