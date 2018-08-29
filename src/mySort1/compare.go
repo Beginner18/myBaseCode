@@ -11,6 +11,7 @@ func compare(left, right interface{}) bool {
 	//待排序数组转为相应类型并比较
 	//空接口无比较
 	case int:
+		//接口类型断言
 		if left.(int) < right.(int) {
 			return true
 		} else {
