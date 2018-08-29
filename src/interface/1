@@ -1,51 +1,23 @@
 //1 interface: 抽象类型，接口类型,仅包含方法集合
-
-//2 接口内嵌，类继承/方法继承
-
+//2 接口内嵌，类继承
 //3 接口实现: 某一类型定义所有接口的方法
-
 //4 指针方法与值方法可以互相调用(隐式转换)，
 //值需为可取址的值(临时变量不可以)
-
 //5 接口值: 具体类型(接口动态类型)&&
 //类型值(接口动态值)
 //	5.1 接口零值: 类型与值均为nil
 //	赋值具体类型后，接口类型隐式转换为具体
 //	类型且动态值为该类型的copy
-
 //6 接口可比较(取决于动态类型)，可用于map的key或者switch操作数
 //见panic/recover,若动态类型不可比较(slice)则panic
-
 //7 接口值为nil与包含nil指针的接口不同
-
-/*8 类型断言:x.(T)
-8.1 T为具体类型：检查x的动态类型==T,OK返回T，失败panic
-8.2 T为接口类型，检查x的动态类型是否满足T方法，不会获得动态
-类型，结果为相同类型的值和部分的接口值，结果有类型T,保护接口值
-内部的动态类型和值的部分
-var w io.Writer
-w = os.Stdout
-rw,ok := w.(io.ReadWriter) // success: *os.File has both Read and Write
-w = new(ByteCounter)
-rw = w.(io.ReadWriter) // panic: *ByteCounter has no Read method
-*/
-/*9 switch case
-switch x.(type){
-case nil:
-case int:
-case bool:
-case float32:
-case float64:
-case string:
-}
-*/
+//
 package main
 
 import (
 	"bytes"
 	"fmt"
 	"io"
-	"os"
 )
 
 //4
@@ -91,40 +63,23 @@ func testM4() {
 		"temp value-valuee method hello"}.mVPrintln()
 }
 
-//7 8
+//7
 const debug = false
 
 func test7() {
 	var buf *bytes.Buffer
-	defer func() {
-		if p := recover(); p != nil {
-			fmt.Println("panic: ", p)
-		}
-	}()
 	if debug {
 		buf = new(bytes.Buffer) // enable collection of output
 	}
-	//隐式转换io.Writer接口复制buf
-	f(buf)
+	f(buf) // NOTE: subtly incorrect!
 	if debug {
 		// ...use buf...
-		fmt.Println("here debug")
 	}
 }
 
 // If out is non-nil, output will be written to it.
 func f(out io.Writer) {
 	// ...do something...
-	fmt.Printf("the type of out in func f: %T \n",
-		out)
-	fmt.Println("the value of out in func f:",
-		out)
-	//8 断言成功返回接口类型T,否则panic
-	f, _ := out.(*bytes.Buffer), out.(*os.File)
-	defer func() {
-		fmt.Println("type assertion: f", f)
-	}()
-
 	if out != nil {
 		out.Write([]byte("done!\n"))
 	}
