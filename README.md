@@ -14,3 +14,5 @@ Part I: sort for int, float32 and float64
 Part II: the examples of go code
 
 1 func defer: /src/defer/main.go
+2 add the usage of log: /src/log/mylog
+3 add the usage of enconding/json: /src/json
