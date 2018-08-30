@@ -1,0 +1,31 @@
+package main
+
+import (
+	"fmt"
+	"runtime"
+	"time"
+)
+
+func main() {
+	testFunc()
+}
+
+//测试runtime包中函数功能
+func testFunc() {
+	defer func() (func()) {
+		start := time.Now()
+		return func() {
+			fmt.Println(time.Since(start))
+		}
+	}()()
+
+	//返回GOROOT path
+	fmt.Println("GOROOT: ", runtime.GOROOT())
+	//返回go version
+	fmt.Println("GO version: ", runtime.Version())
+	//返回本机CPU核数
+	fmt.Println("CPU num: ", runtime.NumCPU())
+	//修改程序最大核数为输入参数，并返回之前核数
+	//输入参数小于1则保持原数目
+	fmt.Println("max procs: ", runtime.GOMAXPROCS(2))
+}
