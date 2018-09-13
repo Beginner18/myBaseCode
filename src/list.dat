@@ -1,0 +1,4 @@
+1 defer
+2 panic&&recover
+3 方法&&接口&&空接口&&反射
+4 channel&&go routine

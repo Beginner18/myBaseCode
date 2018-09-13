@@ -1,0 +1,91 @@
+/*
+信号包: os os/signal syscall
+1 signal.Notify(sigrec <- chan os.Signal, sigs ... os.Signal)
+1.1若接收到将sigs中指定信号则将信号封装为syscall.Signal并放入
+到os.Signal通道;
+1.2若sigs为空，则所有都会传递到通道
+1.3用户可自定义处理通道中信号
+1.4 SIGKILL与SIGSTOP信号不能自行处理也不可被忽略
+2 signal.Stop(sigrec) close(sigrec)
+停止自定义通道处理并关闭通道
+2.1 重新定义signal.Notify(sigrec, sigs)
+sigs中删除掉需要去除的自定义处理信号即可
+
+
+*/
+package main
+
+import (
+	"fmt"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
+	"time"
+)
+
+func test1() {
+	sigs := []os.Signal{syscall.SIGINT, syscall.SIGQUIT}
+	sigRec := make(chan os.Signal, 1)
+	//负责接收信号并自定义处理
+	signal.Notify(sigRec, sigs...)
+	go func() {
+		for sig := range sigRec {
+			//忽略信号只打印
+			fmt.Println("Received a signal: ", sig.String())
+		}
+	}()
+	//停止自定义信号处理回复系统默认处理
+	go func() {
+		signal.Stop(sigRec)
+		//关闭通道，防止for sig循环堵塞
+		close(sigRec)
+	}()
+	for {
+		fmt.Println("1")
+	}
+}
+
+//两个信号组,多进程
+func handleSignal() {
+	//定义第一组信号
+	sigs1 := []os.Signal{syscall.SIGINT, syscall.SIGQUIT}
+	sigRec1 := make(chan os.Signal, 1)
+	signal.Notify(sigRec1, sigs1...)
+	//定义第二组信号
+	sigs2 := []os.Signal{syscall.SIGQUIT}
+	sigRec2 := make(chan os.Signal, 1)
+	signal.Notify(sigRec2, sigs2...)
+	//信号处理需要在goroutine, 可并发执行
+	var wg sync.WaitGroup
+	wg.Add(2)
+	//第一组信号处理
+	go func() {
+		for sig := range sigRec1 {
+			fmt.Println("Received a signal from gourp 1: ", sig.String())
+		}
+		wg.Done()
+	}()
+	//第二组信号处理
+	go func() {
+		for sig := range sigRec2 {
+			fmt.Println("Received a signal from gourp 2: ", sig.String())
+		}
+		wg.Done()
+	}()
+	//停止第一组信号的自定义处理
+	fmt.Println("wait for two seconds")
+	time.Sleep(2 * time.Second)
+	fmt.Println("stop user defined signal handle")
+	signal.Stop(sigRec1)
+	close(sigRec1)
+	wg.Wait()
+	fmt.Printf("done. [sigRec1]\n")
+	signal.Stop(sigRec2)
+	close(sigRec2)
+	fmt.Printf("done. [sigRec2]\n")
+}
+func main() {
+	//test1()
+	handleSignal()
+}

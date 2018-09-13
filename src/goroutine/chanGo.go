@@ -1,9 +1,11 @@
 /****************************
+非原子级操作，时间片轮询
 该文件为go并发编程与管道使用
-1 如果管道不带缓冲，
-发送方会阻塞直到接收方从管道中接收了值。
+1 同步管道：管道不带缓冲，
+发送方会阻塞直到接收方从管道中接收了值
+接送方或者发送方任一方没准备好则堵塞
 
-2 如果管道带缓冲，
+2 异步通信　队列：管道带缓存，
 发送方则会阻塞直到发送的值被拷贝到缓冲区内；
 也就是说，这个信息只要还在管道里面没被使用，
 那么该线程就会一直堵塞
@@ -13,6 +15,7 @@
 同上接收方在有值可以接收之前会一直阻塞。
 
 4 close 函数标志着不会再往某个管道发送值。
+close之后对channel发送数据导致panic
 在调用close之后，并且在之前发送的值都被接收后，
 接收操作会返回一个零值，不会阻塞。
 一个多返回值的接收操作会额外返回
@@ -30,7 +33,7 @@
 避免数据竞争的唯一方式是线程间同步访问所有的共享可变数据。
 有几种方式能够实现这一目标。
 Go语言中，通常是使用管道或者锁。
-(sync和sync/atomic包中还有更低层次的机制可供使用，但本文中不做讨论）
+(sync和sync/atomic包中还有更低层次的机制暂不讨论）
 
 8 互斥锁:
 有时，通过显式加锁，而不是使用管道，来同步数据访问，可能更加便捷。
@@ -46,11 +49,11 @@ Go语言标准库为这一目的提供了一个互斥锁 - sync.Mutex。
 9 检测数据竞争
 以下列方式运行程序：
 go run -race *.go
-使用局部变量传递避免数据竞争
+使用局部变量传递避免数据竞争:线程级安全
 使用闭包让每个routine使用独有变量
 
 10 select语句:case为I/O操作
-select语句是Go语言并发工具集中的终极工具 
+select语句是Go语言并发工具集中的终极工具
 select用于从一组可能的通讯中选择一个进一步处理
 如果任意一个通讯都可以进一步处理， 则从中随机选择一个，执行对应的语句。
 否则，如果又没有默认分支（default case），select语句则会阻塞， 直到其中一个通讯完成
@@ -72,11 +75,6 @@ func chan1() {
 		ch <- "Hello!"
 		ch <- "Hello!"
 		ch <- "Hello!"
-		ch <- "Hello!"
-		ch <- "Hello!"
-		ch <- "Hello!"
-		ch <- "Hello!"
-		ch <- "Hello!"
 		//若不关闭ch，第二次调用时造成死锁
 		close(ch)
 	}()
@@ -85,24 +83,6 @@ func chan1() {
 	fmt.Println("3st", <-ch) // 再次打印输出空字符串""
 	v, ok := <-ch            // 变量v的值为空字符串""，变量ok的值为false
 	fmt.Println("4st", v, ok)
-}
-
-//依次读取管道值
-func chanOrd() {
-	var ch <-chan string = Producer()
-	for s := range ch {
-		fmt.Println("Consumed", s)
-	}
-}
-
-func Producer() <-chan string {
-	ch := make(chan string)
-	go func() {
-		ch <- string("海老握り")  // Ebi nigiri
-		ch <- string("鮪とろ握り") // Toro nigiri
-		close(ch)
-	}()
-	return ch
 }
 
 //管道控制线程
@@ -191,6 +171,7 @@ func lockItUp() {
 	<-wait
 	fmt.Println(n.Value()) // 输出: 2
 }
+
 //测试WaitGroup
 //对一组线程，.Done()线程计数减一
 //.Wait()阻塞线程直到计数为0
@@ -199,34 +180,34 @@ func groupTry(a int) {
 	goGroup.Add(a)
 	for i := 0; i < a; i++ {
 		//函数调用+定义
-		go func(b int) {
+		go func(i int) {
 			//i与for循环主routine中的i共享内存
 			//go routine不分顺序
 			fmt.Println("hello ", i+1)
+			//fmt.Println("b is:", b)
 			goGroup.Done()
-			fmt.Println("goGroup:", goGroup)
-			fmt.Println("b is:",b)
-		}(12)
+		}(i)
 	}
 	goGroup.Wait()
 	fmt.Println("a", a)
 }
 
 func raceGroup() {
-    var wg sync.WaitGroup
-    wg.Add(5)
-    // 译注：注意下面这行代码中的i++
-    for i := 0; i < 5; i++ {
-	//使用局部变量作为线程间数据传输避免数据竞争
-        go func(i int) {
-            // 注意下一行代码会输出什么？为什么？
-            fmt.Println(i) // 6个goroutine共享变量i
-            wg.Done()
-        }(i)
-    }
-    wg.Wait() // 等待所有（5个）goroutine运行结束
-    fmt.Println()
+	var wg sync.WaitGroup
+	wg.Add(5)
+	// 译注：注意下面这行代码中的i++
+	for i := 0; i < 5; i++ {
+		//使用局部变量作为线程间数据传输避免数据竞争
+		go func(i int) {
+			// 注意下一行代码会输出什么？为什么？
+			fmt.Println(i) // 6个goroutine共享变量i
+			wg.Done()
+		}(i)
+	}
+	wg.Wait() // 等待所有（5个）goroutine运行结束
+	fmt.Println()
 }
+
 //使用闭包使每个routine使用唯一变量避免数据竞争
 /**********************************************
 func alsoCorrect() {
@@ -246,68 +227,33 @@ func alsoCorrect() {
 // RandomBits函数 返回一个管道，用于产生一个比特随机序列
 func RandomBits() int {
 
-    ch := make(chan int)
-    go func() {
-        for {
-            select {
-            case ch <- 0: // 注意：分支没有对应的处理语句
-            case ch <- 1:
-            }
-        }
-    }()
-    return <-ch
-}
-//go routine && select
-func goSel() {
-    people := []string{"Anna", "Bob", "Cody", "Dave", "Eva"}
-    match := make(chan string, 1) // 为一个未匹配的发送操作提供空间
-    //为发送的消息内容提供空间
-    info := make(chan string,1)
-    wg := new(sync.WaitGroup)
-    wg.Add(len(people))
-    for _, name := range people {
-        go Seek(name, match, info,wg)
-    }
-    wg.Wait()
-    select {
-    case name := <-match:
-        fmt.Printf("No one received %s’s message.\n", name)
-    default:
-        // 没有待处理的发送操作
-	fmt.Println("null")
-    }
-}
-
-// 函数Seek 发送一个name到match管道或从match管道接收一个peer，结束时通知wait group
-func Seek(name string, match chan string, info chan string, wg *sync.WaitGroup) {
-    select {
-    case peer := <-match:
-	    fmt.Printf("%s sent a message to %s,and the info is: %s\n", peer, name,<-info)
-    case match <- name:
-	    info<-"This is just a info"
-        // 等待某个goroutine接收我的消息
-    }
-    wg.Done()
+	ch := make(chan int)
+	go func() {
+		for {
+			select {
+			case ch <- 0: // 注意：分支没有对应的处理语句
+			case ch <- 1:
+			}
+		}
+	}()
+	return <-ch
 }
 func main() {
 	//chan1()
-	//chanOrd()
 	//chanEmp()
 	//race()
 	//sharingIsCaring()
 	//lockItUp()
-	//groupTry(10)
+	groupTry(10)
 	//raceGroup()
 	/*
-	for i:=0;i<10;i++{
-		fmt.Print(RandomBits(),",")
-		if i==9 {
-			fmt.Print("\n")
+		for i:=0;i<10;i++{
+			fmt.Print(RandomBits(),",")
+			if i==9 {
+				fmt.Print("\n")
+			}
 		}
-	}
 	*/
-	cur := time.Now()
-	fmt.Println(cur.Local())
-	goSel()
+	//cur := time.Now()
+	//fmt.Println(cur.Local())
 }
-

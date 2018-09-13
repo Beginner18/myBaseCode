@@ -1,0 +1,22 @@
+package main
+
+import (
+	"fmt"
+	"net/rpc"
+)
+
+func clientRPC(rpcName, serAdd, cmd string) {
+	client, err := rpc.Dial("tcp", serAdd)
+	if err != nil {
+		fmt.Println("client dial error: ", err)
+	}
+	var res string
+	errRes := client.Call(rpcName, cmd, &res)
+	if errRes != nil {
+		fmt.Println("client call error: ", errRes)
+	}
+	fmt.Println("the remote process call res is: ", res)
+}
+func main() {
+	clientRPC("MonRPC.Monitor", "127.0.1.1:8888", "echo hello")
+}
