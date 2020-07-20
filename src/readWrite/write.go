@@ -1,9 +1,9 @@
 /*****************************************
-File:   getSlaveNodes.go
+File:   getSubordinateNodes.go
 Created by yujiajia@2018-07-18
 Description:
-	Get all information of slave nodes belonged to a certain user,
-	and write the information into a file named master's port.
+	Get all information of subordinate nodes belonged to a certain user,
+	and write the information into a file named main's port.
 Usage:
 *****************************************/
 package main
@@ -25,8 +25,8 @@ func checkErr(e error) {
 
 func main() {
 	//1 以分配给用户的资源为最终资源状态，'el_allocated_resource'
-	//2 slave node不为空显示添加作业按钮，点击该按钮并完成所有配置后，
-	//触发getSlaveNodes.go程序，获取用户的所有slave node信息，并保存为
+	//2 subordinate node不为空显示添加作业按钮，点击该按钮并完成所有配置后，
+	//触发getSubordinateNodes.go程序，获取用户的所有subordinate node信息，并保存为
 	//文件名为主节点端口号的文件
 	//3 服务器根据文件名将文件发送至对应主节点
 	//4
@@ -39,16 +39,16 @@ func main() {
 	fmt.Println(*userStatus)
 	fmt.Println(offlineID)
 	//创建文件，若文件已存在则覆盖为空文件
-	slaveFile, errs := os.Create(mainPort)
+	subordinateFile, errs := os.Create(mainPort)
 	//check创建文件错误
 	checkErr(errs)
 	//写入字符串
-	_, errs = slaveFile.WriteString("10002 2 4\n")
-	_, errs = slaveFile.WriteString("10002 2 4\n")
-	_, errs = slaveFile.WriteString("10002 2 4\n")
+	_, errs = subordinateFile.WriteString("10002 2 4\n")
+	_, errs = subordinateFile.WriteString("10002 2 4\n")
+	_, errs = subordinateFile.WriteString("10002 2 4\n")
 	//check写入文件错误
 	checkErr(errs)
 	//关闭文件
-	errs = slaveFile.Close()
+	errs = subordinateFile.Close()
 	checkErr(errs)
 }
